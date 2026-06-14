@@ -82,34 +82,35 @@ ggsave("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functiona
 ggsave("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis/KEGG_Alluvial_Dotplot.png",
        plot = final_plot,
        width = 18, height = 11, dpi = 300)
+
 #####################################################
 library(tidyverse)
 library(ggalluvial)
 library(patchwork)
 
-# خواندن فایل (مسیر فایل خودتان را بگذارید)
+# Read file
 kegg <- read.delim("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis/GO biological process.txt",
                    header = TRUE, 
                    sep = "\t", 
                    stringsAsFactors = FALSE)
 
-# تغییر نام ستون به Pathway برای سازگاری با کد
+# Rename column to Pathway for compatibility
 colnames(kegg)[colnames(kegg) == "GO.biological.process"] <- "Pathway"
 
-# انتخاب 20 مسیر برتر بر اساس FDR
+# Select top 20 pathways based on FDR
 top_n <- 20  
 kegg_top <- kegg %>%
   arrange(Enrichment.FDR) %>%
   slice_head(n = top_n)
 
-# آماده‌سازی داده برای alluvial plot (جدا کردن ژن‌ها)
+# Prepare data for alluvial plot (split genes)
 kegg_long <- kegg_top %>%
   separate_rows(Genes, sep = "\\s+") %>%      
   rename(Gene = Genes) %>%
   mutate(Gene = str_trim(Gene)) %>%          
   filter(Gene != "" & !is.na(Gene))
 
-# Alluvial plot (چپ)
+# Alluvial plot (left)
 p_alluvial <- ggplot(kegg_long,
                      aes(axis1 = Gene, axis2 = Pathway, y = 1)) +
   geom_alluvium(aes(fill = Pathway), alpha = 0.7, width = 1/6) +
@@ -126,7 +127,7 @@ p_alluvial <- ggplot(kegg_long,
   ) +
   labs(x = NULL, y = NULL)
 
-# Dot plot (راست)
+# Dot plot (right)
 p_dot <- kegg_top %>%
   mutate(
     GeneRatio = nGenes / Pathway.Genes,
@@ -149,7 +150,7 @@ p_dot <- kegg_top %>%
     legend.position = "right"
   )
 
-# ترکیب دو پلات
+# Combine two plots
 final_plot <- p_alluvial + p_dot +
   plot_layout(widths = c(2.8, 1)) +
   plot_annotation(
@@ -160,47 +161,48 @@ final_plot <- p_alluvial + p_dot +
   theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         plot.subtitle = element_text(size = 11, hjust = 0.5))
 
-# نمایش پلات
+# Display plot
 print(final_plot)
 
-# ذخیره پلات
+# Save plot
 ggsave("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis/GO biological process_Dotplot.png",
        plot = final_plot,
        width = 18, height = 11, dpi = 300)
+
 ################################################################
 
 library(tidyverse)
 library(ggalluvial)
 library(patchwork)
 
-# خواندن فایل (مسیر فایل خودتان را بگذارید)
+# Read file
 reactome <- read.delim("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis/Reactome pathway.txt",
                        header = TRUE,
                        sep = "\t",
                        stringsAsFactors = FALSE)
 
-# تغییر نام ستون‌ها برای راحتی کار
+# Rename columns for convenience
 reactome <- reactome %>%
   rename(
-    Pathway = term.description,                  # نام مسیر
-    nGenes = observed.gene.count,                # تعداد ژن‌های مشاهده‌شده
-    Background = background.gene.count,          # تعداد ژن‌های پس‌زمینه
+    Pathway = term.description,                  # Pathway name
+    nGenes = observed.gene.count,                # Observed gene count
+    Background = background.gene.count,          # Background gene count
     FDR = false.discovery.rate,                   # FDR
-    Genes = matching.proteins.in.your.network..labels.  # ژن‌ها (labels خواناتر)
+    Genes = matching.proteins.in.your.network..labels.  # Genes
   )
 
-# مرتب‌سازی بر اساس FDR و انتخاب همه (چون فقط ۳ تا هست، top_n لازم نیست)
+# Sort by FDR and select all (since only 3 pathways)
 reactome_sorted <- reactome %>%
   arrange(FDR)
 
-# آماده‌سازی داده برای alluvial plot (جدا کردن ژن‌ها)
+# Prepare data for alluvial plot (split genes)
 reactome_long <- reactome_sorted %>%
   separate_rows(Genes, sep = ",") %>%
   rename(Gene = Genes) %>%
   mutate(Gene = str_trim(Gene)) %>%
   filter(Gene != "" & !is.na(Gene))
 
-# Alluvial plot (چپ)
+# Alluvial plot (left)
 p_alluvial <- ggplot(reactome_long,
                      aes(axis1 = Gene, axis2 = Pathway, y = 1)) +
   geom_alluvium(aes(fill = Pathway), alpha = 0.7, width = 1/6) +
@@ -217,10 +219,10 @@ p_alluvial <- ggplot(reactome_long,
   ) +
   labs(x = NULL, y = NULL)
 
-# Dot plot (راست)
+# Dot plot (right)
 p_dot <- reactome_sorted %>%
   mutate(
-    GeneRatio = nGenes / Background,             # محاسبه Gene Ratio
+    GeneRatio = nGenes / Background,
     logFDR = -log10(FDR)
   ) %>%
   arrange(desc(GeneRatio)) %>%
@@ -240,7 +242,7 @@ p_dot <- reactome_sorted %>%
     legend.position = "right"
   )
 
-# ترکیب دو پلات
+# Combine two plots
 final_plot <- p_alluvial + p_dot +
   plot_layout(widths = c(2.8, 1)) +
   plot_annotation(
@@ -251,14 +253,13 @@ final_plot <- p_alluvial + p_dot +
   theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
         plot.subtitle = element_text(size = 11, hjust = 0.5))
 
-# نمایش پلات
+# Display plot
 print(final_plot)
 
-# ذخیره پلات (نام فایل را به Reactome تغییر دادم)
+# Save plot
 ggsave("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis/Reactome_Pathway_Dotplot_Alluvial.png",
        plot = final_plot,
-       width = 18, height = 8, dpi = 300)  # height را کمی کمتر کردم چون فقط ۳ مسیر هست
-
+       width = 18, height = 8, dpi = 300)
 
 #=======================================Improved Circular Chord Diagram=====================================
 library(tidyverse)
@@ -281,7 +282,6 @@ create_alluvial_dotplot <- function(file_path,
   }
   
   # ---- manually rename columns based on known patterns ----
-  # Define mapping: standard_name -> list of possible original names (exact matches)
   col_mapping <- list(
     Pathway = c("Pathway", "GO.biological.process", "term.description", "term description"),
     Enrichment.FDR = c("Enrichment.FDR", "Enrichment FDR", "FDR", "false.discovery.rate", "false discovery rate"),
@@ -300,7 +300,7 @@ create_alluvial_dotplot <- function(file_path,
     for (orig_name in col_mapping[[std_name]]) {
       if (orig_name %in% names(df)) {
         names(df)[names(df) == orig_name] <- std_name
-        break   # rename only the first match
+        break
       }
     }
   }
@@ -309,7 +309,6 @@ create_alluvial_dotplot <- function(file_path,
   required <- c("Pathway", "Enrichment.FDR", "nGenes", "Pathway.Genes", "Genes")
   missing <- required[!required %in% names(df)]
   if (length(missing) > 0) {
-    # Print available columns for debugging
     message("Available columns: ", paste(names(df), collapse=", "))
     stop("Missing required columns: ", paste(missing, collapse=", "))
   }
@@ -320,14 +319,14 @@ create_alluvial_dotplot <- function(file_path,
   df$nGenes <- as.numeric(df$nGenes)
   df$Pathway.Genes <- as.numeric(df$Pathway.Genes)
   
-  # select top_n by lowest FDR
+  # Select top_n by lowest FDR
   df_top <- df %>% arrange(Enrichment.FDR) %>% slice_head(n = top_n)
   if (nrow(df_top) == 0) {
     message("⚠️ No valid data in ", file_path)
     return(NULL)
   }
   
-  # split genes
+  # Split genes
   df_long <- df_top %>%
     separate_rows(Genes, sep = genes_sep) %>%
     rename(Gene = Genes) %>%
@@ -335,7 +334,7 @@ create_alluvial_dotplot <- function(file_path,
     filter(Gene != "" & !is.na(Gene))
   
   if (nrow(df_long) == 0) {
-    message("⚠️ No gene‑pathway pairs after splitting")
+    message("⚠️ No gene-pathway pairs after splitting")
     return(NULL)
   }
   
@@ -385,7 +384,7 @@ create_alluvial_dotplot <- function(file_path,
     theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
           plot.subtitle = element_text(size = 10, hjust = 0.5))
   
-  # save at 300 dpi
+  # Save at 300 dpi
   output_png <- paste0(output_name, "_Alluvial_Dotplot.png")
   ggsave(filename = output_png, plot = final_plot,
          width = width, height = height, dpi = 300)
@@ -393,7 +392,6 @@ create_alluvial_dotplot <- function(file_path,
   message("✅ Saved: ", output_png)
   return(final_plot)
 }
-
 
 setwd("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis")
 
@@ -405,6 +403,7 @@ create_alluvial_dotplot("GO biological process.txt", "GO_BP", "GO Biological Pro
 
 # 3) Reactome
 create_alluvial_dotplot("Reactome pathway.txt", "Reactome", "Reactome Pathway Enrichment Analysis", genes_sep = ",", top_n = 10)
+
 #==============================Circ=================================================
 
 create_circular_plot <- function(file_path, output_name, title_text, 
@@ -483,8 +482,8 @@ create_circular_plot <- function(file_path, output_name, title_text,
   output_png <- paste0(output_name, "_Circular_GeneRatio.png")
   png(filename = output_png, width = width, height = height, units = "in", res = 300)
   
-  # ---- set global font to Times (serif) ----
-  par(family = "serif")   # "serif" is more portable than "Times"
+  # Set global font to Times (serif)
+  par(family = "serif")
   
   circos.clear()
   circos.par(start.degree = 90, gap.degree = 2.5, clock.wise = TRUE)
@@ -537,7 +536,7 @@ create_circular_plot <- function(file_path, output_name, title_text,
   
   title(title_text, cex.main = 1.4, font.main = 2, line = -1, family = "serif")
   
-  # Legends – removed invalid 'text.family' argument
+  # Legends
   legend("bottomleft", legend = pathways, fill = pathway_colors[pathways],
          title = "Pathways", cex = 0.65, bty = "o", box.lwd = 0.5, bg = "white",
          text.font = 2, title.font = 2)
@@ -554,7 +553,6 @@ create_circular_plot <- function(file_path, output_name, title_text,
   message("✅ Saved: ", output_png)
 }
 
-
 setwd("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis")
 
 create_circular_plot("kegg_enrichment.txt", "KEGG", "KEGG Enrichment", top_n = 10)
@@ -565,19 +563,19 @@ create_circular_plot("Reactome pathway.txt", "Reactome", "Reactome Enrichment", 
 
 library(cowplot)
 library(magick)
-library(ggplot2)   # <-- add this line
+library(ggplot2)
 
-# خواندن تصاویر
+# Read images
 img1 <- image_read("KEGG_Circular_GeneRatio.png")
 img2 <- image_read("GO_BP_Circular_GeneRatio.png")
 img3 <- image_read("Reactome_Circular_GeneRatio.png")
 
-# تبدیل به grob برای cowplot
+# Convert to grob for cowplot
 g1 <- ggdraw() + draw_image(img1)
 g2 <- ggdraw() + draw_image(img2)
 g3 <- ggdraw() + draw_image(img3)
 
-# چیدمان در یک ردیف (سه‌تایی) با برچسب‌های کوچک a, b, c (بدون عنوان کلی)
+# Arrange in one row (three plots) with small labels a, b, c
 combined <- plot_grid(g1, g2, g3, 
                       ncol = 3, 
                       labels = c("a", "b", "c"),
@@ -586,20 +584,21 @@ combined <- plot_grid(g1, g2, g3,
                       label_colour = "white",
                       hjust = -0.5, vjust = 1.5)
 
-# ذخیره با کیفیت 300 dpi
+# Save with 300 dpi quality
 ggsave("Three_Circular_Plots.png", combined, 
        width = 20, height = 8, dpi = 300)
 
-# نمایش
+# Display
 print(combined)
+
 #=====================================Test For Final=========================
 
 create_circular_plot <- function(file_path, output_name, title_text, 
                                  top_n = 10, 
-                                 width = 9, height = 9,     # smaller than before
+                                 width = 9, height = 9,
                                  genes_sep = "\\s+") {
   
-  # (same column mapping and data preparation as before – unchanged)
+  # (same column mapping and data preparation as before)
   if (grepl("\\.csv$", file_path)) {
     df <- read.csv(file_path, stringsAsFactors = FALSE, check.names = FALSE)
   } else {
@@ -666,11 +665,11 @@ create_circular_plot <- function(file_path, output_name, title_text,
   output_png <- paste0(output_name, "_Circular_GeneRatio.png")
   png(filename = output_png, width = width, height = height, units = "in", res = 300)
   
-  par(family = "serif", mar = c(0.5, 0.5, 0.5, 0.5))  # smaller margins
+  par(family = "serif", mar = c(0.5, 0.5, 0.5, 0.5))
   
   circos.clear()
   circos.par(start.degree = 90, gap.degree = 2.5, clock.wise = TRUE,
-             cell.padding = c(0.02, 0.02, 0.02, 0.02))  # less padding between sectors
+             cell.padding = c(0.02, 0.02, 0.02, 0.02))
   
   chordDiagram(chord_data,
                order = all_sectors,
@@ -734,38 +733,8 @@ create_circular_plot <- function(file_path, output_name, title_text,
   message("✅ Saved: ", output_png)
 }
 
-
 setwd("G:/My Paper/Full Paper/3 Breed haplo/Data/ShinyGO software for functional analysis")
 
 create_circular_plot("kegg_enrichment.txt", "KEGG", "KEGG Enrichment", top_n = 10)
 create_circular_plot("GO biological process.txt", "GO_BP", "GO Biological Process", top_n = 10)
-create_circular_plot("Reactome pathway.txt", "Reactome", "Reactome Enrichment", top_n = 10, genes_sep = ",")
-
-
-library(cowplot)
-library(magick)
-library(ggplot2)
-
-img1 <- image_read("KEGG_Circular_GeneRatio.png")
-img2 <- image_read("GO_BP_Circular_GeneRatio.png")
-img3 <- image_read("Reactome_Circular_GeneRatio.png")
-
-g1 <- ggdraw() + draw_image(img1)
-g2 <- ggdraw() + draw_image(img2)
-g3 <- ggdraw() + draw_image(img3)
-
-# Combine with scale <1 to reduce circle size, and smaller label offsets to bring plots closer
-combined <- plot_grid(g1, g2, g3, 
-                      ncol = 3,
-                      scale = 0.85,               # makes circles smaller
-                      labels = c("a", "b", "c"),
-                      label_size = 20,
-                      label_fontface = "bold",
-                      label_colour = "white",
-                      hjust = -0.3, vjust = 1.2)   # adjust label position
-
-# Use a moderately wide canvas (24 inches) – each plot gets ~8 inches
-ggsave("Three_Circular_Plots_Final.png", combined, 
-       width = 24, height = 8.5, dpi = 300)
-
-print(combined)
+create_circular_plot("Reactome pathway.txt", "Reactome", "Reactome Enrichment", top
